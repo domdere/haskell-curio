@@ -113,4 +113,4 @@ instance Functor (State'' s) where
 -- | TODO: Workout how to construct the bind or at least the join...
 instance Monad (State'' s) where
     return = State'' . curry' id
-    (State'' ma) >>= (State'' f) = State'' $ (fmap . uncurry' f) ma
+    --(State'' ma) >>= (State'' f) = State'' $ (fmap . uncurry' f) ma
