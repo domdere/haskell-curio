@@ -100,8 +100,8 @@ curry' f x = Func $ \state -> f (Pair state x)
 uncurry' :: (a -> G s b) -> F s a -> b
 uncurry' g (Pair state x) = (runG . g) x state
 
-kliesliArrow :: a -> G s (F s b)
-kliesliArrow = undefined
+kleisliArrow :: a -> G s (F s b)
+kleisliArrow = undefined
 
 -- | Now we define the State monad another way...
 -- via the composition G . F
