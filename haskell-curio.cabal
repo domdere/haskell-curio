@@ -25,9 +25,10 @@ flag                    small_base
 library
     default-language:   Haskell2010
 
-    build-depends:      base < 5 && >= 4
-                        , containers
-                        , array
+    build-depends:      base                >= 4 && < 5
+                    ,   comonad             == 4.*
+                    ,   containers
+                    ,   array
 
     ghc-options:        -Wall
                         -fno-warn-unused-imports
@@ -37,7 +38,7 @@ library
 
     hs-source-dirs:     src
 
-    exposed-modules:
+    exposed-modules:    CT.Monad.State
 
 test-suite              doctests
     type:
