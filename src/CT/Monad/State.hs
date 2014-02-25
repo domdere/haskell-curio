@@ -83,31 +83,42 @@ instance Functor (G s) where
 -- and
 -- phi (f . fmap h) == phi f . h
 --
--- and if phi' is the inverse of phi, then
+-- and if unphi is the inverse of phi, then
 --
--- phi' (g . h) == phi' g . fmap h
+-- unphi (g . h) == unphi g . fmap h
 -- and
--- phi' (fmap k . g) == k . phi' g
+-- unphi (fmap k . g) == k . unphi g
 --
 
 -- | In this case `phi` is the `curry` method from Data.Tuple:
 --
-curry' :: (F s a -> b) -> a -> G s b
-curry' f x = Func $ \state -> f (Pair state x)
+-- @
+--     curry :: ((a, s) -> b) -> a -> s -> b
+--  == curry :: ((a, s) -> b) -> a -> (s -> b)
+--   ~ phi :: (F s a -> b) -> a -> G s b        -- Since (a, s) ~ F s a and (s -> b) ~ G s b
+-- @
+phi :: (F s a -> b) -> a -> G s b
+phi f x = Func $ \state -> f (Pair state x)
 
 -- | And the inverse is the `uncurry` method from Data.Tuple:
 --
-uncurry' :: (a -> G s b) -> F s a -> b
-uncurry' g (Pair state x) = (runG . g) x state
+-- @
+--     uncurry :: (a -> s -> b) -> (a, s) -> b
+--  == uncurry :: (a -> s -> b) -> ((a, s) -> b)
+--   ~ unphi :: (a -> G s b) -> F s a -> b        -- Since (a, s) ~ F s a and (s -> b) ~ G s b
+-- @
 
--- Some (undefined) arrows of interesting types to provide insight into what you can do with curry'/uncurry' and fmap
+unphi :: (a -> G s b) -> F s a -> b
+unphi g (Pair state x) = (runG . g) x state
 
--- | Try [>> :t curry' fautomorphism] in GHCi
+-- Some (undefined) arrows of interesting types to provide insight into what you can do with phi/unphi and fmap
+
+-- | Try [>> :t phi fautomorphism] in GHCi
 --
 fautomorphism :: F s a -> F s a
 fautomorphism = undefined
 
--- | Try [>> :t uncurry' gautomorphism] in GHCi
+-- | Try [>> :t unphi gautomorphism] in GHCi
 --
 gautomorphism :: G s a -> G s a
 gautomorphism = undefined
@@ -116,16 +127,22 @@ gautomorphism = undefined
 kleisliArrow :: a -> G s (F s b)
 kleisliArrow = undefined
 
--- by choosing the "canonical" or "obvious" functions for `fautomorphism` and `gautomorphism` and using `curry'` and `uncurry'` (and their properties)
+-- by choosing the "canonical" or "obvious" functions for `fautomorphism` and `gautomorphism` and using `phi` and `unphi` (and their properties)
 -- we can derive our units
 
+-- |
+-- try [>> :t curry id] in GHCi, it will probably look closer to what you would recognise as the type for the `State` monads `return`.
+--
 unit' :: a -> G s (F s a)
-unit' = curry' id
+unit' = phi id
 
 -- | this is the "counit" for `unit'` under the adjunction [F,G]
 --
+-- again if it doesnt make sense to you, try [>> :t uncurry id] in GHCi, and it will most likely looks more recognisable to you as
+-- the `Store` Comonads `extract`.
+--
 counit' :: F s (G s b) -> b
-counit' = uncurry' id
+counit' = unphi id
 
 -- | this is technically also a co unit for unit' but under a different adjunction, so we just call it "join" here
 --
@@ -141,7 +158,7 @@ data State'' s a = State'' { runState'' :: G s (F s a) }
 
 -- | And similarly we can redefine the Store Comonad
 --
-data Store'' s a = Store'' { runStore'' :: F s (G s a)}
+data Store'' s a = Store'' { runStore'' :: F s (G s a) }
 
 -- Just some boiler plate to translate `unit'`, `counit'`, `join'` and `duplicate'`
 -- over to `State''` and `Store''`
