@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------
 -- |
--- Module       : CT.Monad.State
+-- Module       : Control.Monad.State
 -- Copyright    : (C) 2014 Dom De Re
 -- License      : BSD-style (see the file etc/LICENSE.md)
 -- Maintainer   : Dom De Re
@@ -8,12 +8,12 @@
 -- Constructing the State Monad from a particular adjunction
 --
 ---------------------------------------------------------------------------------
-module CT.Monad.State where
+module Control.Monad.State where
 
 import Prelude ( Show, Eq, ($), undefined )
 import Control.Comonad ( Comonad(..) )
 import Control.Monad ( Monad(..) )
-import Data.Function ( (.), id )
+import Data.Function ( (.), const, id )
 import Data.Functor ( Functor(..) )
 
 -- |
@@ -49,6 +49,11 @@ data Store' s a = Store' s (s -> a)
 instance Functor (Store' s) where
     f `fmap` (Store' state g) = Store' state (f . g)
 
+instance Comonad (Store' s) where
+    extract (Store' state f) = f state
+
+    duplicate x@(Store' state _) = Store' state $ const x
+
 -- Helpers
 
 runStore' :: Store' s a -> a
@@ -57,8 +62,8 @@ runStore' (Store' state f) = f state
 --extendStore :: (Store' s a -> b) -> Store' s a -> Store' s b
 --extendStore f (Store' state g) = Store' state $ extend (\g' state' -> f (Store' state' g')) g
 
---duplicateStore :: Store' s a -> Store' s (Store' s a)
---duplicateStore (Store' state f) = 
+duplicateStore :: Store' s a -> Store' s (Store' s a)
+duplicateStore x@(Store' state _) = Store' state $ const x
 
 -- Now we defined the following two functors, `F` and `G`:
 

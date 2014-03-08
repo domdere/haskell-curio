@@ -38,9 +38,9 @@ library
 
     hs-source-dirs:     src
 
-    exposed-modules:    CT.Monad.State
-                    ,   Control.Monad.List
+    exposed-modules:    Control.Monad.List
                     ,   Control.Monad.Maybe
+                    ,   Control.Monad.State
                     ,   Data.Functor.Forgetful
                     ,   Data.Functor.FreeMonoid
                     ,   Data.Functor.FreePointed
