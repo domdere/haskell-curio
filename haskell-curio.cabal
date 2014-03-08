@@ -39,6 +39,14 @@ library
     hs-source-dirs:     src
 
     exposed-modules:    CT.Monad.State
+                    ,   Control.Monad.List
+                    ,   Control.Monad.Maybe
+                    ,   Data.Functor.Forgetful
+                    ,   Data.Functor.FreeMonoid
+                    ,   Data.Functor.FreePointed
+                    ,   Data.Pointed
+
+    default-extensions: NoImplicitPrelude
 
 test-suite              doctests
     type:

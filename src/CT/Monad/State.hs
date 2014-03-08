@@ -10,8 +10,10 @@
 ---------------------------------------------------------------------------------
 module CT.Monad.State where
 
+import Prelude ( Show, Eq, ($), undefined )
 import Control.Comonad ( Comonad(..) )
 import Control.Monad ( Monad(..) )
+import Data.Function ( (.), id )
 import Data.Functor ( Functor(..) )
 
 -- |
