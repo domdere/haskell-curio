@@ -27,7 +27,8 @@ import Data.Functor.Forgetful
 import Data.Functor.FreeMonoid
 
 import Prelude (Show, Eq, ($) )
-import Control.Monad ( Monad(..) )
+import Control.Applicative ( Applicative(..) )
+import Control.Monad ( Monad(..), ap )
 import Data.Function ( (.), id )
 import Data.Functor ( Functor(..) )
 import Data.Monoid ( Monoid(..) )
@@ -43,6 +44,10 @@ instance Monad List where
     return = monoidunit
 
     ma >>= f = monoidjoin $ fmap f ma
+
+instance Applicative List where
+    pure    = return
+    (<*>)   = ap
 
 -- |
 -- The monad adjunction between `FreeMonoid` and `U` means there
@@ -60,7 +65,7 @@ instance Monad List where
 -- @ monoidunphi (fmap h . g) = h . monoidunphi g @
 --
 monoidphi :: (Monoid p) => (FreeMonoid a -> p) -> a -> U p
-monoidphi f = U . f . (`Mappend` Mempty)
+monoidphi f = U . f . Singleton
 
 monoidunphi :: (Monoid p) => (a -> U p) -> FreeMonoid a -> p
 monoidunphi f = interpretFreeMonoid . fmap (unforget . f)
