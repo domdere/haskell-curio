@@ -86,15 +86,35 @@ instance Functor (G s) where
 -- That means we can find an isomorphism (`phi`) between Hom(F a, b) and Hom(a, G b) s.t
 -- for [k :: a -> a'] and [h :: b -> b'],
 --
+-- @
 -- phi (k . f) == fmap k . phi f
--- and
--- phi (f . fmap h) == phi f . h
+-- @
 --
--- and if unphi is the inverse of phi, then
+-- and
+--
+-- @
+-- phi (f . fmap h) == phi f . h
+-- @
+--
+-- and if `unphi` is the inverse of `phi`, then
 --
 -- unphi (g . h) == unphi g . fmap h
 -- and
 -- unphi (fmap k . g) == k . unphi g
+--
+-- (This is what the /naturality/ of `phi` refers to)
+--
+-- And because its a (set) isomorphism,
+--
+-- @
+-- phi . unphi == id :: (a -> G s b) -> a -> G s b
+-- @
+--
+-- and
+--
+-- @
+-- unphi . phi == id :: (F s a -> b) -> F s a -> b
+-- @
 --
 
 -- | In this case `phi` is the `curry` method from Data.Tuple:
@@ -118,7 +138,57 @@ phi f x = Func $ \state -> f (Pair state x)
 unphi :: (a -> G s b) -> F s a -> b
 unphi g (Pair state x) = (runG . g) x state
 
--- Some (undefined) arrows of interesting types to provide insight into what you can do with phi/unphi and fmap
+-- Isomorphism:
+--
+-- now lets see what @unphi . phi@ and @phi . unphi@ evaluate to (applying equational reasoning):
+--
+-- @
+-- (unphi . phi) f      == unphi (\x -> Func $ \s -> f (Pair s x))                              -- (expanding `phi f`)
+--                      == \(Pair s' x') -> ((runG . (\x -> Func $ \s -> f (Pair s x))) x' s')  -- (expanding `unphi`)
+--                      == \(Pair s' x') -> (runG (Func $ \s -> f (Pair s x'))) s'              -- (reducing @(\x -> Func $ \s -> f (Pair s x))) x'@)
+--                      == \(Pair s' x') -> (\s -> f (Pair s x')) s'                            -- (evaluating @runG (Func $ \s -> f (Pair s x'))@)
+--                      == \(Pair s' x') -> f (Pair s' x')                                      -- (reducing @(\s -> f (Pair s x')) s'@)
+--                      == f                                                                    -- (reducing @\(Pair s' x') -> f (Pair s' x')@)
+-- @
+--
+-- Similarly for @phi . unphi@:
+--
+-- @
+-- (phi . unphi) g      == phi (\(Pair s x) -> (runG . g) x s)                                   -- (expanding `unphi g`)
+--                      == \x' -> (Func $ \s' -> ((\(Pair s x) -> (runG . g) x s) (Pair s' x'))) -- (expanding `phi`)
+--                      == \x' -> (Func $ \s' -> (runG . g) x' s')                               -- (reducing @((\(Pair s x) -> (runG . g) x s) (Pair s' x'))@)
+--                      == \x' -> (Func $ \s' -> (runG (g x')) s')                               -- (reducing @runG . g@)
+--                      == \x' -> (Func $ \s' -> (runG (Func g')) s')                            -- (rewriting @g x'@ as @Func g'@ for some [g' :: s -> b])
+--                      == \x' -> (Func $ \s' -> g' s')                                          -- (rewriting using @runG . Func == id@)
+--                      == \x' -> (Func g')                                                      -- (reducing \s' -> g' s')
+--                      == \x' -> g x'                                                           -- (using @g x' == Func g'@ again)
+--                      == g                                                                     -- (reducing @\x' -> g x'@)
+-- @
+--
+-- hence `phi` is indeed a one to one bijection, with `unphi` as its inverse
+--
+-- Naturality
+--
+-- 1) @phi (k . f) == fmap k . phi f@
+--
+-- (I work through one direction of the proof, and leave the reversibility of the steps as an exercise):
+--
+-- @forall k. k :: a -> a'@,
+--
+-- @
+-- phi (k . f) == \x -> Func $ \s -> (k . f) (Pair s x)         -- (expanding @phi@)
+-- phi (k . f) == \x -> Func $ ((k . f) . l x)                  -- letting @l = flip Pair@
+-- phi (k . f) == \x -> Func $ (k . (f . l x))                  -- using the associativity of composition
+-- phi (k . f) == \x -> Func $ k . (runG (Func (f . l x)))      -- rewriting using @runG . Func == id@
+-- phi (k . f) == \x -> fmap k . Func $ runG (Func (f . l x))   -- rewriting using the definition of `fmap` for `G`
+-- phi (k . f) == \x -> fmap k . Func (f . l x)                 -- again using @runG . Func == id@
+-- phi (k . f) == \x -> fmap k . Func (\s -> f (Pair s x))      -- using @l = flip Pair@
+-- phi (k . f) == fmap k . (\x -> Func (\s -> f (Pair s x)))    -- again by associativity of composition
+-- phi (k . f) == fmap k . phi f                                -- by the definition of `phi`
+-- @
+--
+
+-- Some (undefined) arrows of interesting types to provide insight into what you can do with `phi`, `unphi` and `fmap`
 
 -- | Try [>> :t phi fautomorphism] in GHCi
 --
