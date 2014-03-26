@@ -87,3 +87,7 @@ The related `cabal-dev` and `sandbox` artifacts are already contained in the `.g
 [doctest-userguide]: https://github.com/sol/doctest-haskell/blob/master/README.markdown#usage "doctest Usage Guide"
 [cabal-dev]: https://github.com/creswick/cabal-dev "creswick/cabal-dev on GitHub.com"
 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/domdere/haskell-curio/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
