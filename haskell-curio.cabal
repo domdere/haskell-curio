@@ -41,6 +41,7 @@ library
     exposed-modules:    Control.Monad.List
                     ,   Control.Monad.Maybe
                     ,   Control.Monad.State
+                    ,   Data.Aggregator
                     ,   Data.Functor.Forgetful
                     ,   Data.Functor.FreeMonoid
                     ,   Data.Functor.FreePointed
