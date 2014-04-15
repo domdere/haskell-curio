@@ -84,7 +84,7 @@ instance Functor (G s) where
 -- These two functors are adjoint (with F being left adjoint to G)
 
 -- That means we can find an isomorphism (`phi`) between Hom(F a, b) and Hom(a, G b) s.t
--- for [k :: a -> a'] and [h :: b -> b'],
+-- for [k :: b -> b'] and [h :: a -> a'],
 --
 -- @
 -- phi (k . f) == fmap k . phi f
@@ -98,9 +98,15 @@ instance Functor (G s) where
 --
 -- and if `unphi` is the inverse of `phi`, then
 --
+-- @
 -- unphi (g . h) == unphi g . fmap h
+-- @
+--
 -- and
+--
+-- @
 -- unphi (fmap k . g) == k . unphi g
+-- @
 --
 -- (This is what the /naturality/ of `phi` refers to)
 --
@@ -153,19 +159,36 @@ unphi g (Pair state x) = (runG . g) x state
 --
 -- Similarly for @phi . unphi@:
 --
+-- first its interesting to consider the following result:
+--
+-- for some [s' :: s], [x :: a], and [g :: a -> G s b]
+--
+-- Func $ \s' -> (runG . g) x s'    == Func $ \s' -> (runG (g x)) s'    -- expanding out the (.)
+--                                  == Func $ \s' -> g' s'              -- let @g' :: s -> b; g' = runG (g x)@
+--                                  == Func g'                          -- @\s' -> g' s' == g'@
+--                                  == Func $ runG (g x)                -- @g' == runG (g x)@
+--                                  == (Func . runG) (g x)
+--                                  == g x                              -- using @Func . runG == id@
+--
+-- hence for all [s' :: s], [x :: a], [g :: a -> G s b],
+--
+-- @
+-- Func $ \s' -> (runG . g) x s' == g x
+-- @
+--
+-- Which i will refer back to with (**)
+--
 -- @
 -- (phi . unphi) g      == phi (\(Pair s x) -> (runG . g) x s)                                   -- (expanding `unphi g`)
 --                      == \x' -> (Func $ \s' -> ((\(Pair s x) -> (runG . g) x s) (Pair s' x'))) -- (expanding `phi`)
 --                      == \x' -> (Func $ \s' -> (runG . g) x' s')                               -- (reducing @((\(Pair s x) -> (runG . g) x s) (Pair s' x'))@)
---                      == \x' -> (Func $ \s' -> (runG (g x')) s')                               -- (reducing @runG . g@)
---                      == \x' -> (Func $ \s' -> (runG (Func g')) s')                            -- (rewriting @g x'@ as @Func g'@ for some [g' :: s -> b])
---                      == \x' -> (Func $ \s' -> g' s')                                          -- (rewriting using @runG . Func == id@)
---                      == \x' -> (Func g')                                                      -- (reducing \s' -> g' s')
---                      == \x' -> g x'                                                           -- (using @g x' == Func g'@ again)
+--                      == \x' -> g x'                                                           -- (rewriting using (**))
 --                      == g                                                                     -- (reducing @\x' -> g x'@)
 -- @
 --
 -- hence `phi` is indeed a one to one bijection, with `unphi` as its inverse
+--
+-- the result that @Func $ \s' -> (runG . g) x' s' == g x'@, @forall g. g :: (a -> G s b)@ is a handy result
 --
 -- Naturality
 --
@@ -173,7 +196,7 @@ unphi g (Pair state x) = (runG . g) x state
 --
 -- (I work through one direction of the proof, and leave the reversibility of the steps as an exercise):
 --
--- @forall k. k :: a -> a'@,
+-- @forall k. k :: b -> b'@,
 --
 -- @
 -- phi (k . f) == \x -> Func $ \s -> (k . f) (Pair s x)         -- (expanding @phi@)
@@ -187,6 +210,55 @@ unphi g (Pair state x) = (runG . g) x state
 -- phi (k . f) == fmap k . phi f                                -- by the definition of `phi`
 -- @
 --
+-- 2) phi (f . fmap h) == phi f . h
+--
+-- @forall h. h :: a -> a'@
+--
+-- @
+-- phi (f . fmap h) == \x -> Func $ \s -> (f . fmap h) (Pair s x)       -- (expanding @phi@)
+-- phi (f . fmap h) == \x -> Func $ \s -> f (fmap h (Pair s x))         -- (by the definition of (.))
+-- phi (f . fmap h) == \x -> Func $ \s -> f (Pair s (h x))              -- (from the definition of `fmap` for `F`)
+-- phi (f . fmap h) == (\x -> Func $ \s -> f (Pair s x)) . (\x -> h x)  -- (from the definition of (.))
+-- phi (f . fmap h) == (\x -> Func $ \s -> f (Pair s x)) . h            -- (@(\x -> h x) == h@)
+-- phi (f . fmap h) == phi f . h                                        -- (@phi f == \x -> Func $ \s -> f (Pair s x)@)
+-- @
+--
+-- 3) unphi (g . h) == unphi g . fmap h
+--
+-- @forall h. h :: a -> a'@
+--
+-- @
+-- unphi (g . h)    == \(Pair state x) -> (runG . (g . h)) x state                                      -- (expanding @unphi@)
+--                  == \(Pair state x) -> (runG . g) (h x) state                                        -- (from the definition of (.))
+--                  == (\(Pair state x) -> (runG . g) x state) . (\(Pair state x) -> Pair state (h x))  -- (by the definition of (.))
+--                  == unphi g . (\(Pair state x) -> Pair state (h x))                                  -- (from the definition of @unphi@)
+--                  == unphi g . fmap h                                                                 -- (from the definition of @fmap@ for `F`)
+-- @
+--
+-- 4) @unphi (fmap k . g) == k . unphi g@
+--
+-- @forall k. k :: b -> b'@
+--
+-- @
+-- unphi (fmap k . g)   == \(Pair state x) -> (runG . (fmap k . g)) x state         -- (expanding @unphi@)
+--                      == \(Pair state x) -> (runG . fmap k) (g x) state           -- (by the definition of (.))
+--                      == \(Pair state x) -> (runG . fmap k) (g x) state           -- (by the definition of (.))
+--                      == \(Pair state x) -> (runG (fmap k (g x))) state           -- (by the definition of (.))
+--                      == \(Pair state x) -> (runG (Func $ k . runG (g x))) state  -- (by the definition of `fmap` for `G`)
+--                      == \(Pair state x) -> (k . runG (g x)) state                -- (using @runG . Func@)
+--                      == k . (\(Pair state x) -> (runG (g x)) state)              -- (using the definition of (.))
+--                      == k . (\(Pair state x) -> (runG . g) x state)              -- (using the definition of (.))
+--                      == k . unphi g                                              -- (using the definition of @unphi@)
+-- @
+--
+-- Hence (again leaving the reverse directions as an exercise), `phi` is /natural/ in its underlying categories `C` and `D` (in this case
+-- they are both (Proper) Hask).
+
+-- Some (undefined) arrows of interesting types to provide insight into what you can do with `phi`, `unphi` and `fmap`
+
+-- | Try [>> :t phi fautomorphism] in GHCi
+--
+-- @
 
 -- Some (undefined) arrows of interesting types to provide insight into what you can do with `phi`, `unphi` and `fmap`
 
@@ -269,3 +341,82 @@ instance Comonad (Store'' s) where
     extract = counit
 
     duplicate = duplicate'
+
+-- The Monad Laws
+--
+-- Reviewing the Monad Laws (<http://hackage.haskell.org/package/base-4.6.0.1/docs/Control-Monad.html#t:Monad>):
+--
+-- 1) @return a >>= k  ==  k a@                         (`return` is a 'left identity' of sorts for the bind)
+-- 2) @m >>= return  ==  m@                             (`return` is a 'right identity' of sorts for the bind)
+-- 3) @m >>= (\x -> k x >>= h)  ==  (m >>= k) >>= h@    (bind is Associative)
+--
+-- From here on in i will not differentiate between @foo'@, @foo''@, @foo'''@, etc.. for any @foo@, they are all fundamentally
+-- The same thing. I.e from here on in:
+--
+-- @ return = unit = phi id @
+-- @ extract = counit = unphi id @
+-- @ join = fmap counit @ using the Functor instance for `G`
+-- @ duplicate = fmap unit @ using the Functor instance for `F`
+--
+-- we'll also be using this fact: @ m >>= f == (join . fmap (fmap f)) m @  (See the Functor instance of State'' to see why there are two fmaps here...)
+--
+-- We can rewrite the laws in the following equivalent forms:
+--
+-- 1:
+-- @
+--      k   == (phi . unphi) k
+--          == phi (unphi k)
+--          == phi (unphi (id . k))
+--          == phi (unphi id . fmap k)
+--          == phi (counit . fmap k)
+--          == fmap counit . phi (fmap k)
+--          == join . phi (fmap k)
+--          == join . phi (fmap k . id)
+--          == join . fmap (fmap k) . phi id
+--          == join . fmap (fmap k) . unit
+--
+--     hence
+--     k a  == (join . fmap (fmap k) . unit) a
+--          == (join . fmap (fmap k)) (unit a)
+--          == unit a >>= k
+--          == return a >>= k
+-- @
+--
+-- (Once again its left as an exercise to show that the steps are reversible)
+--
+-- 2:
+--
+-- @
+--     id   == fmap id
+--          == fmap (unphi (phi id))
+--          == fmap (unphi unit)
+--          == fmap (unphi (id . unit))
+--          == fmap (unphi id . fmap unit)
+--          == fmap (counit . fmap unit)
+--          == fmap counit . fmap (fmap unit)
+--          == join . fmap (fmap unit)
+--          == join . fmap (fmap return)
+--
+--     and so:
+--
+--     m    == id m
+--          == join . fmap (fmap return) m
+--          == m >>= return
+-- @
+--
+-- (Exercise to show the steps are reversible)
+--
+-- 3:
+--
+-- @
+--      m >>= (\x -> k x >>= h) == join . fmap (fmap (\x -> k x >>= h)) m
+--                              == join . fmap (fmap (\x -> (join . fmap (fmap h)) (k x))) m
+--                              == join . fmap (fmap ((\x -> (join . fmap (fmap h)) x) . k)) m
+--                              == join . fmap (fmap ((join . fmap (fmap h)) . k)) m
+--
+--      and
+--
+--      join . fmap (fmap ((join . fmap (fmap h)) . k)) == join . fmap (fmap (f . k))    -- (let f = (join . fmap (fmap h)))
+--                                                      == join . fmap (fmap f . fmap k)
+--                                                      == join . ()
+-- @
